@@ -12,9 +12,8 @@ from collections import defaultdict
 
 class Thread:
 
-    def __init__(self,threadid,timestamp,category,ttype):
+    def __init__(self,threadid,category,ttype):
         self.threadid = threadid
-        self.timestamp = timestamp
         self.posts = []
         self.category = category
         self.ttype = ttype
@@ -118,7 +117,7 @@ for j in range(1,i) :
         thread.addPost(post)
         postcountseen[thread_id] = postcountseen[thread_id] +1
     else :
-        thread = Thread(thread_id,timestamp,subreddit_id,"")
+        thread = Thread(thread_id,subreddit_id,"")
         threads[thread_id] = thread
         thread.addPost(post)
         postcountseen[thread_id] = 1
