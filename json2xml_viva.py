@@ -60,7 +60,7 @@ jsonforlinenr = dict() # key is line number, value is parsed json
 #json_string=f.readline()
 
 
-
+print("<?xml version=\"1.0\"?>\n")
 print("<forum type=\"viva\">")
 #while json_string:
 for json_string in fileinput.input([json_file]):
