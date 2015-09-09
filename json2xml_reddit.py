@@ -1,6 +1,6 @@
 # python json2xml_reddit.py reddit_data/2015/RC_2015-04.10000 > reddit_data/2015/RC_2015-04.10000.xml
 
-
+import os
 import sys
 reload(sys)  
 sys.setdefaultencoding('utf8')
@@ -24,11 +24,11 @@ class Thread:
     def getNrOfPosts(self):
         return len(self.posts)
 
-    def printXML(self):
-        print("<thread id=\""+self.threadid+"\">\n<category>"+self.category+"</category>\n<posts>")
+    def printXML(self,out):
+        out.write("<thread id=\""+self.threadid+"\">\n<category>"+self.category+"</category>\n<posts>\n")
         for post in self.posts:
-            post.printXML()
-        print("</posts>\n</thread>")
+            post.printXML(out)
+        out.write("</posts>\n</thread>\n")
 
 
 class Post:
@@ -41,9 +41,10 @@ class Post:
         self.parentid = parentid
         self.ups = ups
         self.downs = downs
+        #sys.stderr.write(parent_id+" upvotes:"+str(ups)+"\n")
     
-    def printXML(self):
-        print("<post id=\""+self.postid+"\">\n<author>"+self.author+"</author>\n<timestamp>"+self.timestamp+"</timestamp>\n<parentid>"+self.parentid+"</parentid>\n<body>"+self.body+"</body>\n<upvotes>"+str(ups)+"</upvotes>\n<downvotes>"+str(downs)+"</downvotes>\n</post>")
+    def printXML(self,out):
+        out.write("<post id=\""+self.postid+"\">\n<author>"+self.author+"</author>\n<timestamp>"+self.timestamp+"</timestamp>\n<parentid>"+self.parentid+"</parentid>\n<body>"+self.body+"</body>\n<upvotes>"+str(self.ups)+"</upvotes>\n<downvotes>"+str(self.downs)+"</downvotes>\n</post>\n")
 
 
 json_file = sys.argv[1]
@@ -88,7 +89,7 @@ threads = dict()  # key is thread_id, value is Object thread
 postcountseen = dict() # key is thread_id, value is the number of posts that we saw. Once it equals the total nr of posts for the thread, then the thread is printed
 
 sys.stderr.write("Parsing and printing threads\n")
-print("<forum type=\"reddit\">")
+#print("<forum type=\"reddit\">")
 for j in range(1,i) :
 #    sys.stderr.write(str(j)+"\n");
 
@@ -98,8 +99,17 @@ for j in range(1,i) :
     parsed_json = jsonforlinenr[j]
 
     subreddit = parsed_json['subreddit']
+
+    if (not os.path.exists("reddit_data/per_subreddit/"+subreddit)) :
+        os.makedirs("reddit_data/per_subreddit/"+subreddit)
+  
     thread_id = re.sub("t[0-9]_","",parsed_json['link_id'])
     # the post with the same id as the thread id, is the opening post
+    
+    out = open("reddit_data/per_subreddit/"+subreddit+"/"+thread_id+".xml","w")
+
+    out.write("<?xml version=\"1.0\"?>\n")
+    out.write("<forum type=\"reddit\">\n")
     author = parsed_json['author']
     timestamp = parsed_json['created_utc']
 
@@ -108,6 +118,8 @@ for j in range(1,i) :
     parent_id = re.sub("t[0-9]_","",parsed_json['parent_id'])
     downs = parsed_json['downs']
     ups = parsed_json['ups']
+
+#    sys.stderr.write(thread_id+" upvotes:"+str(ups)+"\n")
     post = Post(post_id,author,timestamp,body,parent_id,ups,downs)
 
 
@@ -125,11 +137,13 @@ for j in range(1,i) :
 #    sys.stderr.write(">>>>> CURRENT nr of posts in thread: "+thread_id+":"+str(thread.getNrOfPosts())+"\n")
     if (postcountseen[thread_id] >= postcountperthread[thread_id]) :
         #sys.stderr.write("print thread "+thread_id+"\n")
-        thread.printXML()
-        
+        thread.printXML(out)
+ 
+    out.write("</forum>\n")
 
+    out.close()
 
-print("</forum>")
+#print("</forum>")
     
 
 
