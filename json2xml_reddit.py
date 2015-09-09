@@ -1,4 +1,4 @@
-# python json2xml_reddit.py reddit_data/2015/RC_2015-04.10000
+# python json2xml_reddit.py reddit_data/2015/RC_2015-04.10000 > reddit_data/2015/RC_2015-04.10000.xml
 
 
 import sys
@@ -32,21 +32,18 @@ class Thread:
 
 
 class Post:
-    postid=""
-    author=""
-    timestamp=""
-    body=""
-    parent_id=""
 
-    def __init__(self,postid,author,timestamp,body,parentid):
+    def __init__(self,postid,author,timestamp,body,parentid,ups,downs):
         self.postid = postid
         self.author = author
         self.timestamp = timestamp
         self.body = body
         self.parentid = parentid
+        self.ups = ups
+        self.downs = downs
     
     def printXML(self):
-        print("<post id=\""+self.postid+"\">\n<author>"+self.author+"</author>\n<timestamp>"+self.timestamp+"</timestamp>\n<parentid>"+self.parentid+"</parentid>\n<body>"+self.body+"</body></post>")
+        print("<post id=\""+self.postid+"\">\n<author>"+self.author+"</author>\n<timestamp>"+self.timestamp+"</timestamp>\n<parentid>"+self.parentid+"</parentid>\n<body>"+self.body+"</body>\n<upvotes>"+str(ups)+"</upvotes>\n<downvotes>"+str(downs)+"</downvotes>\n</post>")
 
 
 json_file = sys.argv[1]
@@ -100,7 +97,7 @@ for j in range(1,i) :
 
     parsed_json = jsonforlinenr[j]
 
-    subreddit_id = parsed_json['subreddit_id']
+    subreddit = parsed_json['subreddit']
     thread_id = re.sub("t[0-9]_","",parsed_json['link_id'])
     # the post with the same id as the thread id, is the opening post
     author = parsed_json['author']
@@ -109,7 +106,9 @@ for j in range(1,i) :
     post_id = parsed_json['id']
     body = parsed_json['body'].encode('utf-8').strip()
     parent_id = re.sub("t[0-9]_","",parsed_json['parent_id'])
-    post = Post(post_id,author,timestamp,body,parent_id)
+    downs = parsed_json['downs']
+    ups = parsed_json['ups']
+    post = Post(post_id,author,timestamp,body,parent_id,ups,downs)
 
 
     if (thread_id in threads.keys()) :
@@ -117,7 +116,7 @@ for j in range(1,i) :
         thread.addPost(post)
         postcountseen[thread_id] = postcountseen[thread_id] +1
     else :
-        thread = Thread(thread_id,subreddit_id,"")
+        thread = Thread(thread_id,subreddit,"")
         threads[thread_id] = thread
         thread.addPost(post)
         postcountseen[thread_id] = 1
