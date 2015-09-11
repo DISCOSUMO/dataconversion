@@ -53,11 +53,34 @@ class Post:
 json_file = sys.argv[1]
 sys.stderr.write("Reading "+json_file+"\n")
 
-postcountperthread = dict() # key is thread_id, value is # of posts in thread
+postcountperthread = dict() # key is threadid, value is # of posts in thread
 jsonforlinenr = dict() # key is line number, value is parsed json
 
 #f=open(json_file)
 #json_string=f.readline()
+
+postsperthread = {}
+# dictionary with threadid as key and posts dictionary ((author,timestamp)->postid) as value
+
+months_conversion = {'januari': '01', 'februari': '02', 'maart': '03', 'april': '04', 'mei': '05', 'juni': '06', 'juli': '07', 'augustus': '08', 'september': '09', 'oktober': '10', 'november': '11', 'december': '12'}
+
+def findQuote (content,threadid) :
+    pattern = re.compile("\*\*\[(.*) schreef op (.*) @\\n([0-9:]+)\]")
+    match = pattern.search(content)
+    referred_post = ""
+    if (match) :
+        user = match.group(1)
+        date = match.group(2)
+        time = match.group(3)
+        [day,month,year] = date.split();
+        monthnumber = months_conversion[month]
+        converteddate = day+"-"+monthnumber+"-"+year+" "+time
+        postsforthread = postsperthread[threadid]
+        if ((user,converteddate) in postsforthread.keys()) :
+            referred_post = postsforthread[(user,converteddate)]
+        else :
+            sys.stderr.write("Quoted post is missing from thread: "+user+" "+converteddate+"\n")
+    return referred_post
 
 
 print("<?xml version=\"1.0\"?>\n")
@@ -69,25 +92,32 @@ for json_string in fileinput.input([json_file]):
 #    sys.stderr.write(json_string+"\n")
     parsed_json = json.loads(json_string)
     for json_thread in parsed_json:
-        thread_id = json_thread['thread_id']
+
+        posts = {} 
+        # dictionary with (author,timestamp) as key and postid as value, for finding referenced posts in quotes
+
+        threadid = json_thread['thread_id']
         category = json_thread['category']
-        thread = Thread(thread_id,category,"")
+        thread = Thread(threadid,category,"")
 
         htmlcontent = json_thread['content']
         
-#        sys.stderr.write(thread_id+"\n")    
+#        sys.stderr.write(threadid+"\n")    
 
         htmlstruct = BSHTML(htmlcontent)
         nrofposts = len(htmlstruct.findAll('span'))
-        sys.stderr.write(thread_id+": nr of posts:"+str(nrofposts)+"\n")
+        sys.stderr.write(threadid+": nr of posts:"+str(nrofposts)+"\n")
         i = 0
         while (i < nrofposts) :
             timestamp = htmlstruct.findAll('span')[i].contents[0].strip()
             author = htmlstruct.findAll('strong')[i].contents[0].strip()
             content = htmlstruct.findAll('p')[i].contents[0]
-            #sys.stderr.write(thread_id+"\t"+timestamp+"\t"+author+"\n")     
-            post = Post(str(i),author,timestamp,content,"")
+            parentid = findQuote(content,threadid)
+            #sys.stderr.write(threadid+"\t"+timestamp+"\t"+author+"\n")     
+            post = Post(str(i),author,timestamp,content,str(parentid))
             thread.addPost(post)
+            posts[(author,timestamp)] = i;
+            postsperthread[threadid] = posts;
             i = i+1
 
         thread.printXML()
@@ -95,6 +125,7 @@ for json_string in fileinput.input([json_file]):
 
 print("</forum>")
     
+
 
 
 
