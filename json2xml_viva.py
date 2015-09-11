@@ -1,6 +1,6 @@
-# python json2xml_viva.py viva_data/viva_dump  > viva_data/viva_dump.xml
+# python json2xml_viva.py viva_data_sample/viva_dump  
 
-
+import os
 import sys
 reload(sys)  
 sys.setdefaultencoding('utf8')
@@ -13,8 +13,9 @@ from BeautifulSoup import BeautifulSoup as BSHTML
 
 class Thread:
 
-    def __init__(self,threadid,category,ttype):
-        self.threadid = threadid
+    def __init__(self,thread_id,title,category,ttype):
+        self.thread_id = thread_id
+        self.title = title
         self.posts = []
         self.category = category
         self.ttype = ttype
@@ -25,11 +26,11 @@ class Thread:
     def getNrOfPosts(self):
         return len(self.posts)
 
-    def printXML(self):
-        print("<thread id=\""+self.threadid+"\">\n<category>"+self.category+"</category>\n<posts>")
+    def printXML(self,out):
+        out.write("<thread id=\""+self.thread_id+"\">\n<category>"+self.category+"</category>\n<title>"+self.title+"</title>\n<posts>\n")
         for post in self.posts:
-            post.printXML()
-        print("</posts>\n</thread>")
+            post.printXML(out)
+        out.write("</posts>\n</thread>\n")
 
 
 class Post:
@@ -46,25 +47,25 @@ class Post:
         self.body = body
         self.parentid = parentid
     
-    def printXML(self):
-        print("<post id=\""+self.postid+"\">\n<author>"+self.author+"</author>\n<timestamp>"+self.timestamp+"</timestamp>\n<parentid>"+self.parentid+"</parentid>\n<body>"+self.body+"</body></post>")
+    def printXML(self,out):
+        out.write("<post id=\""+self.postid+"\">\n<author>"+self.author+"</author>\n<timestamp>"+self.timestamp+"</timestamp>\n<parentid>"+self.parentid+"</parentid>\n<body>"+self.body+"</body></post>\n")
 
 
 json_file = sys.argv[1]
 sys.stderr.write("Reading "+json_file+"\n")
 
-postcountperthread = dict() # key is threadid, value is # of posts in thread
+postcountperthread = dict() # key is thread_id, value is # of posts in thread
 jsonforlinenr = dict() # key is line number, value is parsed json
 
 #f=open(json_file)
 #json_string=f.readline()
 
 postsperthread = {}
-# dictionary with threadid as key and posts dictionary ((author,timestamp)->postid) as value
+# dictionary with thread_id as key and posts dictionary ((author,timestamp)->postid) as value
 
 months_conversion = {'januari': '01', 'februari': '02', 'maart': '03', 'april': '04', 'mei': '05', 'juni': '06', 'juli': '07', 'augustus': '08', 'september': '09', 'oktober': '10', 'november': '11', 'december': '12'}
 
-def findQuote (content,threadid) :
+def findQuote (content,thread_id) :
     pattern = re.compile("\*\*\[(.*) schreef op (.*) @\\n([0-9:]+)\]")
     match = pattern.search(content)
     referred_post = ""
@@ -75,16 +76,18 @@ def findQuote (content,threadid) :
         [day,month,year] = date.split();
         monthnumber = months_conversion[month]
         converteddate = day+"-"+monthnumber+"-"+year+" "+time
-        postsforthread = postsperthread[threadid]
-        if ((user,converteddate) in postsforthread.keys()) :
-            referred_post = postsforthread[(user,converteddate)]
-        else :
-            sys.stderr.write("Quoted post is missing from thread: "+user+" "+converteddate+"\n")
+        if (thread_id in postsperthread.keys()) : 
+            postsforthread = postsperthread[thread_id]
+            
+            if ((user,converteddate) in postsforthread.keys()) :
+                referred_post = postsforthread[(user,converteddate)]
+            else :
+                sys.stderr.write("Quoted post is missing from thread: "+user+" "+converteddate+"\n")
     return referred_post
 
 
-print("<?xml version=\"1.0\"?>\n")
-print("<forum type=\"viva\">")
+#print("<?xml version=\"1.0\"?>")
+#print("<forum type=\"viva\">")
 #while json_string:
 for json_string in fileinput.input([json_file]):
     
@@ -96,36 +99,45 @@ for json_string in fileinput.input([json_file]):
         posts = {} 
         # dictionary with (author,timestamp) as key and postid as value, for finding referenced posts in quotes
 
-        threadid = json_thread['thread_id']
+        thread_id = json_thread['thread_id']
         category = json_thread['category']
-        thread = Thread(threadid,category,"")
+
+        if (not os.path.exists("Viva_forum/per_category/"+category)) :
+            os.makedirs("Viva_forum/per_category/"+category)
+
+        title = json_thread['title']
+
+        out = open("Viva_forum/per_category/"+category+"/"+thread_id+".xml","w")
+        out.write("<?xml version=\"1.0\"?>\n")
+        out.write("<forum type=\"viva\">\n")
+
+        thread = Thread(thread_id,title,category,"")
 
         htmlcontent = json_thread['content']
         
-#        sys.stderr.write(threadid+"\n")    
+#        sys.stderr.write(thread_id+"\n")    
 
         htmlstruct = BSHTML(htmlcontent)
         nrofposts = len(htmlstruct.findAll('span'))
-        sys.stderr.write(threadid+": nr of posts:"+str(nrofposts)+"\n")
+        sys.stderr.write(thread_id+": nr of posts:"+str(nrofposts)+"\n")
         i = 0
         while (i < nrofposts) :
             timestamp = htmlstruct.findAll('span')[i].contents[0].strip()
             author = htmlstruct.findAll('strong')[i].contents[0].strip()
             content = htmlstruct.findAll('p')[i].contents[0]
-            parentid = findQuote(content,threadid)
-            #sys.stderr.write(threadid+"\t"+timestamp+"\t"+author+"\n")     
+            parentid = findQuote(content,thread_id)
+            #sys.stderr.write(thread_id+"\t"+timestamp+"\t"+author+"\n")     
             post = Post(str(i),author,timestamp,content,str(parentid))
             thread.addPost(post)
             posts[(author,timestamp)] = i;
-            postsperthread[threadid] = posts;
+            postsperthread[thread_id] = posts;
             i = i+1
 
-        thread.printXML()
-
-
-print("</forum>")
+        thread.printXML(out)
+        out.write("</forum>\n")
+        out.close()
     
 
 
-
+#print("</forum>")
 
