@@ -104,7 +104,6 @@ for j in range(1,i) :
         os.makedirs("reddit_data/per_subreddit/"+subreddit)
   
     thread_id = re.sub("t[0-9]_","",parsed_json['link_id'])
-    # the post with the same id as the thread id, is the opening post
     
     out = open("reddit_data/per_subreddit/"+subreddit+"/"+thread_id+".xml","w")
 
