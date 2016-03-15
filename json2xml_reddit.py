@@ -1,4 +1,4 @@
-# python json2xml_reddit.py reddit_data/reddit_openingposts/RS_2014-12.1000 reddit_data/2014/RC_2014-12.100000 > reddit_data/RSC_2014-12.1000.xml
+# python json2xml_reddit.py reddit_data/reddit_openingposts/RS_2014-12 reddit_data/2014/RC_2014-12.1000000 
 
 import os
 import sys
@@ -26,7 +26,7 @@ class Thread:
         return len(self.posts)
 
     def printXML(self,out):
-        out.write("<thread id=\""+self.threadid+"\">\n<category>"+self.category+"</category>\n<title>"+self.title+"</title>\nposts>\n")
+        out.write("<thread id=\""+self.threadid+"\">\n<category>"+self.category+"</category>\n<title>"+self.title+"</title>\n<posts>\n")
         for post in self.posts:
             post.printXML(out)
         out.write("</posts>\n</thread>\n")
