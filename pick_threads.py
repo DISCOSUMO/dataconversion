@@ -49,7 +49,7 @@ postcountfilename = "../dataconversion/postcountperthread.reddit.txt"
 if re.match(".*Viva.*",rootdir):
     postcountfilename = "../dataconversion/postcountperthread.viva.txt"
 
-sys.stderr.write("postcountfile:"+postcountfilename)
+sys.stderr.write("postcountfile:"+postcountfilename+"\n")
 
 postcounts = dict()
 sys.stderr.write("Read postcountperthread file\n")

@@ -50,7 +50,7 @@ class Post:
         self.body = re.sub(">","&gt;",self.body)
         self.body = re.sub("=","&#61;",self.body)
         self.body = re.sub("http[^ ]*","[URL]",self.body)
-        self.body = re.sub("[^a-zA-Z0-9 ,.!:'\"-+@$%;&# ]","", self.body)
+        self.body = re.sub("[^a-zA-Z0-9 ,.!:'\"-+@$%;&?# ]","", self.body)
         self.parentid = parentid
         self.ups = ups
         self.downs = downs
