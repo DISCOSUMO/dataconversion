@@ -1,15 +1,16 @@
-# python json2xml_viva.py Viva_forum/viva_dump.json  
+# coding=utf-8
+#  python json2xml_viva.py Viva_forum/viva_dump.json
+# python json2xml_viva.py /Users/suzanverberne/Data/FORUM_DATA/Viva/viva_forum_gezondheid_10000.json
 
 import os
 import sys
-reload(sys)  
-sys.setdefaultencoding('utf8')
 import json
-import dicttoxml
 import re
 import fileinput
-from collections import defaultdict
-from BeautifulSoup import BeautifulSoup as BSHTML
+import BeautifulSoup as BSHTML
+
+json_file = sys.argv[1]
+txt_file = json_file+".txt"
 
 class Thread:
 
@@ -32,6 +33,10 @@ class Thread:
             post.printXML(out)
         out.write("</posts>\n</thread>\n")
 
+    def printTXT(self,out):
+        for post in self.posts:
+            post.printTXT(out)
+
 
 class Post:
     postid=""
@@ -50,8 +55,10 @@ class Post:
     def printXML(self,out):
         out.write("<post id=\""+self.postid+"\">\n<author>"+self.author+"</author>\n<timestamp>"+self.timestamp+"</timestamp>\n<parentid>"+self.parentid+"</parentid>\n<body>"+self.body+"</body></post>\n")
 
+    def printTXT(self,out):
+        out.write(self.body+"\n")
 
-json_file = sys.argv[1]
+
 sys.stderr.write("Reading "+json_file+"\n")
 
 postcountperthread = dict() # key is thread_id, value is # of posts in thread
@@ -69,24 +76,24 @@ def findQuote (content,thread_id) :
     pattern = re.compile("\*\*\[(.*) schreef op (.*) @\\n([0-9:]+)\]")
     match = pattern.search(content)
     referred_post = ""
-    if (match) :
+    if match :
         user = match.group(1)
         date = match.group(2)
         time = match.group(3)
         datepattern = re.compile("^[^ ]+ [^ ]+ [^ ]+$")
-        if (datepattern.match(date)) :
-            [day,month,year] = date.split();
+        if datepattern.match(date) :
+            [day,month,year] = date.split()
             monthnumber = months_conversion[month]
             converteddate = day+"-"+monthnumber+"-"+year+" "+time
-            if (thread_id in postsperthread.keys()) : 
+            if thread_id in postsperthread.keys() :
                 postsforthread = postsperthread[thread_id]
             
-                if ((user,converteddate) in postsforthread.keys()) :
+                if (user,converteddate) in postsforthread.keys() :
                     referred_post = postsforthread[(user,converteddate)]
                 else :
                     user = "anoniem"
                     sys.stderr.write("Quoted post is missing from thread: "+user+" "+converteddate+" ")
-                    if ((user,converteddate) in postsforthread.keys()) :
+                    if (user,converteddate) in postsforthread.keys() :
                         referred_post = postsforthread[(user,converteddate)]
                         sys.stderr.write("but found anoniempje at that timestamp and used that\n")
                     else :
@@ -97,6 +104,7 @@ def findQuote (content,thread_id) :
 #print("<?xml version=\"1.0\"?>")
 #print("<forum type=\"viva\">")
 #while json_string:
+outtxt = open(txt_file,'w')
 for json_string in fileinput.input([json_file]):
     
     json_string = re.sub("\": \"","\":\"",json_string)
@@ -111,7 +119,7 @@ for json_string in fileinput.input([json_file]):
         thread_id = json_thread['thread_id']
         category = json_thread['category']
 
-        if (not os.path.exists("Viva_forum/per_category/"+category)) :
+        if not os.path.exists("Viva_forum/per_category/"+category) :
             os.makedirs("Viva_forum/per_category/"+category)
 
         title = json_thread['title']
@@ -131,34 +139,35 @@ for json_string in fileinput.input([json_file]):
         sys.stderr.write(thread_id+": nr of posts:"+str(nrofposts)+"\n")
         i = 0
         datepattern = re.compile("[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]")
-        while (i < nrofposts) :
-            if (datepattern.match(htmlstruct.findAll('span')[i].contents[0].strip())) :
+        while i < nrofposts :
+            if datepattern.match(htmlstruct.findAll('span')[i].contents[0].strip()) :
  #               sys.stderr.write(htmlstruct.findAll('span')[i].contents[0].strip()+"\n")
                 # 26-01-2015 22:31
                 timestamp = htmlstruct.findAll('span')[i].contents[0].strip()
                 author = htmlstruct.findAll('strong')[i].contents[0].strip()
-                if (re.match("anoniem[0-9]+",author)) :
+                if re.match("anoniem[0-9]+",author) :
                     author = "anoniem"
                 content = htmlstruct.findAll('p')[i].contents[0]
                 parentid = findQuote(content,thread_id)
                 #sys.stderr.write(thread_id+"\t"+timestamp+"\t"+author+"\n")     
                 post = Post(str(i),author,timestamp,content,str(parentid))
                 thread.addPost(post)
-                posts[(author,timestamp)] = i;
-                postsperthread[thread_id] = posts;
+                posts[(author,timestamp)] = i
+                postsperthread[thread_id] = posts
             else :
                 sys.stderr.write("span item is not a timestamp: "+htmlstruct.findAll('span')[i].contents[0].strip()+" --> removed\n")
                 del htmlstruct.findAll('span')[i]
-                nrofposts = nrofposts-1 
+                nrofposts -= nrofposts
                 # there was a 'span' item found that was counted as timestamp (new post) but appeared not to be a timestamp. 
                 # so no new post here and array of authors is 1 shorter than array of timestamp
-            i = i+1
+            i += 1
 
         thread.printXML(out)
+        thread.printTXT(outtxt)
         out.write("</forum>\n")
         out.close()
     
-
+outtxt.close()
 
 #print("</forum>")
 
