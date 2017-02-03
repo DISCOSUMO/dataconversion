@@ -1,5 +1,5 @@
 # coding=utf-8
-# python csv2xml_nytimes.py /Users/suzanverberne/Data/FORUM_DATA/NYTimes/comments_study.csv NYtimes/threads
+# python csv2xml_nytimes.py comments_study.csv NYtimes/threads
 
 
 import sys

@@ -1,4 +1,4 @@
-# python json2xml_fb.py  GIST_FB/gist_all_posts_and_comments.json
+# python json2xml_fb.py  facebook_discussions.json
 
 import os
 import sys

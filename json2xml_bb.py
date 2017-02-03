@@ -1,4 +1,4 @@
-# python json2xml_fb.py  NL_GIST_forum
+# python json2xml_fb.py  Forum_directory
 
 import os
 import sys

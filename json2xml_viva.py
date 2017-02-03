@@ -1,6 +1,5 @@
 # coding=utf-8
-#  python json2xml_viva.py Viva_forum/viva_dump.json
-# python json2xml_viva.py /Users/suzanverberne/Data/FORUM_DATA/Viva/viva_forum_gezondheid_10000.json
+# python json2xml_viva.py Viva_forum/viva_dump.json
 
 import os
 import sys
